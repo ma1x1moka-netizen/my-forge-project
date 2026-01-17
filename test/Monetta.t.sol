@@ -1,40 +1,72 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import "forge-std/Test.sol";
-import "../src/Monetta.sol";
+import {Test, console} from "forge-std/Test.sol";
+import {Monetta} from "../src/Monetta.sol";
 
 contract MonettaTest is Test {
-    Monetta public token;
+    Monetta public monetta;
+    address public player = address(1); // Создаем фейкового игрока
 
+    // Эта функция запускается ПЕРЕД каждым тестом
     function setUp() public {
-        token = new Monetta();
+        monetta = new Monetta();
+
+        // Дадим нашему игроку немного фейкового эфира для тестов (10 ETH)
+        vm.deal(player, 10 ether);
+
+        // ВАЖНО: Дадим самому контракту эфира, чтобы он мог выплачивать выигрыши!
+        // Иначе, если игрок выиграет 2х, в контракте не хватит денег на выплату (sell).
+        vm.deal(address(monetta), 100 ether);
     }
 
-    function testBuyAndSell() public {
-        // 1. Создаем чистого юзера (Боба)
-        address bob = address(0xB0B);
+    // Тест 1: Проверка игры в казино
+    function testCasinoPlay() public {
+        // Начинаем действовать от лица игрока
+        vm.startPrank(player);
 
-        // 2. Даем Бобу денег (10 эфиров)
-        vm.deal(bob, 10 ether);
+        uint256 balanceBefore = monetta.balanceOf(player);
+        console.log("Balance Before:", balanceBefore);
 
-        // 3. Все действия ниже делает Боб, а не Админ
-        vm.startPrank(bob);
+        // Играем на 1 эфир
+        monetta.casino{value: 1 ether}();
 
-        // --- ПОКУПКА ---
-        token.buy{value: 1 ether}();
+        uint256 balanceAfter = monetta.balanceOf(player);
+        console.log("Balance After:", balanceAfter);
 
-        // Теперь у Боба должен быть ровно 1 токен (так как изначально было 0)
-        assertEq(token.balanceOf(bob), 1 ether, "Balance incorrect after buy");
+        // Мы не можем гарантировать победу (рандом), но можем проверить,
+        // что либо баланс не изменился (проигрыш), либо вырос (победа)
+        if (balanceAfter > balanceBefore) {
+            console.log("We Won!");
+            assertEq(balanceAfter, 2 ether); // Должны получить 2 токена за 1 ETH
+        } else {
+            console.log("We Lost!");
+            assertEq(balanceAfter, 0);
+        }
 
-        // --- ПРОДАЖА ---
-        token.sell(1 ether);
+        vm.stopPrank();
+    }
 
-        // Теперь токенов снова 0
-        assertEq(token.balanceOf(bob), 0, "Balance incorrect after sell");
+    // Тест 2: Проверка продажи токенов (Cash out)
+    // Чтобы протестировать продажу, нам нужно сначала "наколдовать" игроку токены,
+    // так как через казино их выиграть сложно (рандом).
+    // Но так как у нас нет функции "просто дать токены", мы схитрим через "vm.mockCall"
+    // или просто попытаемся выиграть в цикле, но проще протестировать логику выигрыша отдельно.
 
-        // И деньги вернулись (было 10, потратил 1, вернул 1 = снова 10)
-        assertEq(bob.balance, 10 ether, "ETH incorrect after sell");
+    // Давайте сделаем тест сценария: "Если у меня есть токены, могу ли я их продать?"
+    // Для этого нам пришлось бы добавить функцию mint для админа в контракт,
+    // но пока проверим обратную ситуацию:
+    // Мы переименовали функцию (убрали Fail из названия)
+    function testSellWithoutTokensReverts() public {
+        vm.startPrank(player);
+
+        // Магия тут: Мы говорим Foundry "Следующая строка ДОЛЖНА выдать ошибку"
+        // Если следующая строка НЕ выдаст ошибку, тест провалится.
+        vm.expectRevert();
+
+        // Попытка продать 1 эфир токенов, когда баланс 0.
+        // Это действие вызовет ошибку, и vm.expectRevert() её "поймает".
+        monetta.sell(1 ether);
 
         vm.stopPrank();
     }
