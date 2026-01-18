@@ -3,15 +3,15 @@
 pragma solidity ^0.8.27;
 
 contract autoria {
-    uint256 public carPrice = 20000;
+    uint256 public carPrice = 20000 ether;
     address public seller;
     address public buyer;
     address public arbiter;
     string public status;
     uint256 public deadLine = block.timestamp + 30 days;
 
-    constructor(address _arbiter) {
-        seller = msg.sender;
+    constructor(address _arbiter, address _seller) {
+        seller = _seller;
         arbiter = _arbiter;
     }
 
@@ -34,18 +34,18 @@ contract autoria {
 
         if (_status == true) {
             (bool send, ) = address(seller).call{value: carPrice}("");
-            require(send, "AAAA");
+            require(send, "tranfer failed");
         } else {
             (bool send, ) = address(buyer).call{value: carPrice}("");
-            require(send, "AAAA");
+            require(send, "tranfer to buyer failed");
         }
     }
 
     function cancel() external {
-        require(block.timestamp > deadLine, "ne");
+        require(block.timestamp > deadLine, "deal failed");
         require(address(this).balance >= carPrice);
 
         (bool send, ) = address(buyer).call{value: carPrice}("");
-        require(send, "AAAA");
+        require(send, "refund failed");
     }
 }
