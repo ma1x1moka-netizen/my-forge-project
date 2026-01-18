@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "forge-std/console.sol";
 
 contract Monetta is ERC20, ERC20Permit {
     constructor() ERC20("Monetta", "MONA") ERC20Permit("Monetta") {}
@@ -26,9 +27,14 @@ contract Monetta is ERC20, ERC20Permit {
     }
 
     function casino() external payable {
-        uint256 r = random(100);
-
+        uint256 r = random(1000);
+        console.log("Random number:", r);
         if (r < 50) _mint(msg.sender, msg.value * 2);
+    }
+
+    function casino2() external payable {
+        uint256 r = random(msg.value);
+        _mint(msg.sender, r);
     }
 
     // uint256 N = 100;

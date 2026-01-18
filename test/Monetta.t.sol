@@ -7,6 +7,7 @@ import {Monetta} from "../src/Monetta.sol";
 contract MonettaTest is Test {
     Monetta public monetta;
     address public player = address(1); // Создаем фейкового игрока
+    address public player2 = address(2);
 
     // Эта функция запускается ПЕРЕД каждым тестом
     function setUp() public {
@@ -14,6 +15,7 @@ contract MonettaTest is Test {
 
         // Дадим нашему игроку немного фейкового эфира для тестов (10 ETH)
         vm.deal(player, 10 ether);
+        vm.deal(player2, 20 ether);
 
         // ВАЖНО: Дадим самому контракту эфира, чтобы он мог выплачивать выигрыши!
         // Иначе, если игрок выиграет 2х, в контракте не хватит денег на выплату (sell).
@@ -67,6 +69,69 @@ contract MonettaTest is Test {
         // Попытка продать 1 эфир токенов, когда баланс 0.
         // Это действие вызовет ошибку, и vm.expectRevert() её "поймает".
         monetta.sell(1 ether);
+
+        vm.stopPrank();
+    }
+
+    function test_random() public {
+        assertEq(monetta.random(10), 2);
+        assertEq(monetta.random(10), 2);
+        assertEq(monetta.random(10), 2);
+        // msg.sender
+        // timestempt
+    }
+
+    function testCasinoPlay2() public {
+        vm.startPrank(player2);
+
+        uint256 balanceBefore = monetta.balanceOf(player2);
+        console.log("Balance Before:", balanceBefore);
+
+        monetta.casino{value: 1 ether}();
+
+        uint256 balanceAfter = monetta.balanceOf(player2);
+        console.log("Balance After:", balanceAfter);
+
+        // Мы не можем гарантировать победу (рандом), но можем проверить,
+        // что либо баланс не изменился (проигрыш), либо вырос (победа)
+        if (balanceAfter > balanceBefore) {
+            console.log("We Won!");
+            assertEq(balanceAfter, 2 ether); // Должны получить 2 токена за 1 ETH
+        } else {
+            console.log("We Lost!");
+            assertEq(balanceAfter, 0);
+        }
+
+        vm.stopPrank();
+    }
+
+    // 2 - с перемоткой времени, для block.timestamp
+
+    // мотаем на 100 сек
+
+    // пробуем еще раз
+
+    function testCasinoPlay3() public {
+        vm.startPrank(player);
+        vm.warp(block.timestamp + 1000);
+
+        uint256 balanceBefore = monetta.balanceOf(player);
+        console.log("Balance Before:", balanceBefore);
+
+        monetta.casino{value: 1 ether}();
+
+        uint256 balanceAfter = monetta.balanceOf(player);
+        console.log("Balance After:", balanceAfter);
+
+        // Мы не можем гарантировать победу (рандом), но можем проверить,
+        // что либо баланс не изменился (проигрыш), либо вырос (победа)
+        if (balanceAfter > balanceBefore) {
+            console.log("We Won!");
+            assertEq(balanceAfter, 2 ether); // Должны получить 2 токена за 1 ETH
+        } else {
+            console.log("We Lost!");
+            assertEq(balanceAfter, 0);
+        }
 
         vm.stopPrank();
     }
