@@ -3,11 +3,16 @@
 pragma solidity ^0.8.27;
 
 contract autoria {
+    error BalanceTooLow();
+    error DealFailed();
+    error RefundFailed(address sender);
+    error ApproverNotValid(address sender);
+    error NotEnoughtdays(address sender);
     uint256 public carPrice = 20000 ether;
     address public seller;
     address public buyer;
     address public arbiter;
-    string public status;
+    // string public status;
     uint256 public deadLine = block.timestamp + 30 days;
 
     constructor(address _arbiter, address _seller) {
@@ -19,7 +24,7 @@ contract autoria {
         require(msg.value >= carPrice);
         buyer = msg.sender;
         if (address(this).balance == carPrice) {
-            status = "locked";
+            // status = "locked";
         }
     }
 
@@ -29,7 +34,7 @@ contract autoria {
     }
 
     function approved(bool _status) public {
-        require(msg.sender == arbiter);
+        require(msg.sender == arbiter, ApproverNotValid(msg.sender));
         require(address(this).balance >= carPrice);
 
         if (_status == true) {
@@ -42,10 +47,21 @@ contract autoria {
     }
 
     function cancel() external {
-        require(block.timestamp > deadLine, "deal failed");
-        require(address(this).balance >= carPrice);
+        if (block.timestamp <= deadLine) {
+            revert NotEnoughtdays(msg.sender);
+        }
+
+        // require(block.timestamp > deadLine, "deal failed");
+
+        // require(address(this).balance >= carPrice);
+        if (address(this).balance < carPrice) {
+            revert BalanceTooLow();
+        }
 
         (bool send, ) = address(buyer).call{value: carPrice}("");
-        require(send, "refund failed");
+        //  !=send == send == false
+        if (send == false) {
+            revert RefundFailed(msg.sender); //     require(send, "refund failed");
+        }
     }
 }

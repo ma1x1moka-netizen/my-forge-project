@@ -40,7 +40,7 @@ contract AutoriaTest is Test {
 
     //имяКонтракта.имяФункции(значение)
 
-    function testAproved() public {
+    function testApproved() public {
         testPayforCar();
 
         vm.startPrank(arbiter);
@@ -48,7 +48,7 @@ contract AutoriaTest is Test {
         vm.stopPrank();
     }
 
-    function testAproved2() public {
+    function testApproved2() public {
         testPayforCar();
 
         vm.startPrank(arbiter);
@@ -56,11 +56,12 @@ contract AutoriaTest is Test {
         vm.stopPrank();
     }
 
-    function testAproved3() public {
+    function testApproved3() public {
         testPayforCar();
 
         vm.startPrank(robber);
-        vm.expectRevert();
+        // vm.expectRevert(autoContract.ApproverNotValid, msg.sender);
+        vm.expectRevert(abi.encodeWithSelector(autoria.ApproverNotValid.selector, robber));
         autoContract.approved(true);
         vm.stopPrank();
     }
@@ -72,5 +73,18 @@ contract AutoriaTest is Test {
         autoContract.cancel();
         assert(address(autoContract).balance == 0);
         assert(balanceBefore + 20000 ether == address(buyer).balance);
+    }
+    // abi.encodeWithSelector--важно
+    function testCancel2() public {
+        testPayforCar();
+
+        vm.startPrank(buyer);
+        vm.warp(block.timestamp + 17 days);
+        vm.expectRevert(abi.encodeWithSelector(autoria.NotEnoughtdays.selector, buyer));
+        uint256 balanceBefore = address(buyer).balance;
+        autoContract.cancel();
+        // assert(address(autoContract).balance == 0);
+        // assert(balanceBefore + 20000 ether == address(buyer).balance);
+        vm.stopPrank();
     }
 }
