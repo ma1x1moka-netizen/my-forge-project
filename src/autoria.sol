@@ -8,6 +8,7 @@ contract autoria {
     error RefundFailed(address sender);
     error ApproverNotValid(address sender);
     error NotEnoughtdays(address sender);
+    error NotEnouhtMoney(address sender);
     uint256 public carPrice = 20000 ether;
     address public seller;
     address public buyer;
@@ -21,11 +22,18 @@ contract autoria {
     }
 
     function payforCAR() external payable {
-        require(msg.value >= carPrice);
-        buyer = msg.sender;
-        if (address(this).balance == carPrice) {
-            // status = "locked";
+        if (msg.value < carPrice) {
+            // стало <--
+
+            revert NotEnouhtMoney(msg.sender);
         }
+
+        // require(msg.value >= carPrice); <-- было
+        buyer = msg.sender;
+
+        // if (address(this).balance == carPrice) {
+        //     // status = "locked";
+        // }
     }
 
     function getBalance() public view returns (uint256) {
@@ -34,7 +42,12 @@ contract autoria {
     }
 
     function approved(bool _status) public {
-        require(msg.sender == arbiter, ApproverNotValid(msg.sender));
+        if (msg.sender != arbiter) {
+            // <-- Стало
+            revert ApproverNotValid(msg.sender);
+        }
+        // require(msg.sender == arbiter, ApproverNotValid(msg.sender)); <-- Было
+
         require(address(this).balance >= carPrice);
 
         if (_status == true) {
