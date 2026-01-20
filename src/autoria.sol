@@ -9,6 +9,7 @@ contract autoria {
     error ApproverNotValid(address sender);
     error NotEnoughtdays(address sender);
     error NotEnouhtMoney(address sender);
+    error TransferFailed(address recipient);
     uint256 public carPrice = 20000 ether;
     address public seller;
     address public buyer;
@@ -42,20 +43,32 @@ contract autoria {
     }
 
     function approved(bool _status) public {
+        // require(msg.sender == arbiter, ApproverNotValid(msg.sender)); <-- Было
         if (msg.sender != arbiter) {
             // <-- Стало
             revert ApproverNotValid(msg.sender);
         }
-        // require(msg.sender == arbiter, ApproverNotValid(msg.sender)); <-- Было
 
-        require(address(this).balance >= carPrice);
+        // require(address(this).balance >= carPrice);
+
+        if (address(this).balance < carPrice) {
+            revert BalanceTooLow();
+        }
 
         if (_status == true) {
             (bool send, ) = address(seller).call{value: carPrice}("");
-            require(send, "tranfer failed");
+            // require(send, "tranfer failed"); // <-- было
+            if (send != true) {
+                // <-- стало
+                revert TransferFailed(seller);
+            }
         } else {
             (bool send, ) = address(buyer).call{value: carPrice}("");
-            require(send, "tranfer to buyer failed");
+            // require(send, "tranfer to buyer failed"); // <-- было
+            if (send != true) {
+                // <-- стало
+                revert TransferFailed(buyer);
+            }
         }
     }
 
