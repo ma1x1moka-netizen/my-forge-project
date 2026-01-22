@@ -7,48 +7,62 @@ contract autoria {
     error DealFailed();
     error RefundFailed(address sender);
     error ApproverNotValid(address sender);
-    error NotEnoughtdays(address sender);
-    error NotEnouhtMoney(address sender);
+    error NotEnoughDays(address sender);
+    error NotEnouhMoney(address sender);
     error TransferFailed(address recipient);
+    error AccessDenied(address sender);
+    error InvalidStatus(address sender);
     uint256 public carPrice = 20000 ether;
     address public seller;
     address public buyer;
     address public arbiter;
 
+    enum StatusData {
+        Open,
+        Locked,
+        Finished,
+        Cancelled
+    }
+    StatusData statusData;
+
     // string public status;
     uint256 public deadLine = block.timestamp + 30 days;
 
     constructor(address _arbiter, address _seller) {
+        statusData = StatusData.Open;
         seller = _seller;
         arbiter = _arbiter;
     }
-
+    // Оплата за тачку
     function payforCAR() external payable {
-        // uint256 balanceSenderBefore = address(msg.sender).balance;
-
-        if (msg.value < carPrice) {
-            // стало <--
-
-            revert NotEnouhtMoney(msg.sender);
+        if (statusData != StatusData.Open) {
+            revert InvalidStatus(msg.sender);
         }
 
-        // require(msg.value >= carPrice); <-- было
-        buyer = msg.sender;
-    }
+        if (msg.value < carPrice) {
+            revert NotEnouhMoney(msg.sender);
+        }
 
+        buyer = msg.sender;
+
+        statusData = StatusData.Locked;
+    }
+    // смотрим баланс
     function getBalance() public view returns (uint256) {
         uint256 balance = address(this).balance;
         return balance;
     }
-
+    // арбитр принимает решение
     function approved(bool _status) public {
-        // require(msg.sender == arbiter, ApproverNotValid(msg.sender)); <-- Было
+        if (statusData != StatusData.Locked) {
+            revert InvalidStatus(msg.sender);
+        }
+
         if (msg.sender != arbiter) {
             // <-- Стало
             revert ApproverNotValid(msg.sender);
         }
-
-        // require(address(this).balance >= carPrice);
+        statusData = StatusData.Finished;
 
         if (address(this).balance < carPrice) {
             revert BalanceTooLow();
@@ -80,28 +94,33 @@ contract autoria {
             }
         }
     }
-
+    // прошел месяц, ни денег ни тачки, что делать?
     function cancel() external {
-        if (block.timestamp <= deadLine) {
-            revert NotEnoughtdays(msg.sender);
+        if (statusData != StatusData.Locked) {
+            revert InvalidStatus(msg.sender);
         }
 
-        // require(block.timestamp > deadLine, "deal failed");
+        if (msg.sender != buyer) {
+            revert AccessDenied(msg.sender);
+        }
 
-        // require(address(this).balance >= carPrice);
+        if (block.timestamp <= deadLine) {
+            revert NotEnoughDays(msg.sender);
+        }
+
         if (address(this).balance < carPrice) {
             revert BalanceTooLow();
         }
-
+        statusData = StatusData.Cancelled;
         uint256 balanceBeforeBuyer2 = address(buyer).balance;
         (bool send, ) = address(buyer).call{value: carPrice}("");
-        //  !=send == send == false
-        if (balanceBeforeBuyer2 >= address(buyer).balance) {
-            revert RefundFailed(buyer);
-        }
 
         if (send == false) {
-            revert RefundFailed(msg.sender); //     require(send, "refund failed");
+            revert RefundFailed(msg.sender);
+        }
+
+        if (balanceBeforeBuyer2 >= address(buyer).balance) {
+            revert RefundFailed(buyer);
         }
     }
 }
