@@ -14,6 +14,7 @@ contract autoria {
     address public seller;
     address public buyer;
     address public arbiter;
+
     // string public status;
     uint256 public deadLine = block.timestamp + 30 days;
 
@@ -23,6 +24,8 @@ contract autoria {
     }
 
     function payforCAR() external payable {
+        // uint256 balanceSenderBefore = address(msg.sender).balance;
+
         if (msg.value < carPrice) {
             // стало <--
 
@@ -31,10 +34,6 @@ contract autoria {
 
         // require(msg.value >= carPrice); <-- было
         buyer = msg.sender;
-
-        // if (address(this).balance == carPrice) {
-        //     // status = "locked";
-        // }
     }
 
     function getBalance() public view returns (uint256) {
@@ -56,15 +55,25 @@ contract autoria {
         }
 
         if (_status == true) {
+            uint256 balanceSellerBefore = address(seller).balance;
+
             (bool send, ) = address(seller).call{value: carPrice}("");
+
+            if (balanceSellerBefore >= address(seller).balance) {
+                revert TransferFailed(seller);
+            }
             // require(send, "tranfer failed"); // <-- было
             if (send != true) {
                 // <-- стало
                 revert TransferFailed(seller);
             }
         } else {
+            uint256 balanceBuyerBefore = address(buyer).balance;
             (bool send, ) = address(buyer).call{value: carPrice}("");
             // require(send, "tranfer to buyer failed"); // <-- было
+            if (balanceBuyerBefore >= address(buyer).balance) {
+                revert TransferFailed(buyer);
+            }
             if (send != true) {
                 // <-- стало
                 revert TransferFailed(buyer);
@@ -84,8 +93,13 @@ contract autoria {
             revert BalanceTooLow();
         }
 
+        uint256 balanceBeforeBuyer2 = address(buyer).balance;
         (bool send, ) = address(buyer).call{value: carPrice}("");
         //  !=send == send == false
+        if (balanceBeforeBuyer2 >= address(buyer).balance) {
+            revert RefundFailed(buyer);
+        }
+
         if (send == false) {
             revert RefundFailed(msg.sender); //     require(send, "refund failed");
         }
