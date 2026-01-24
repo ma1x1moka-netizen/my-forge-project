@@ -37,6 +37,7 @@ contract autoria {
         seller = _seller;
         arbiter = _arbiter;
     }
+
     // Оплата за тачку
     function payforCAR() external payable {
         if (statusData != StatusData.Open) {
@@ -54,11 +55,13 @@ contract autoria {
         statusData = StatusData.Locked;
         emit Deposit(msg.sender, msg.value, block.timestamp);
     }
+
     // смотрим баланс
     function getBalance() public view returns (uint256) {
         uint256 balance = address(this).balance;
         return balance;
     }
+
     // арбитр принимает решение
     function approved(bool _status) public {
         if (statusData != StatusData.Locked) {
@@ -81,7 +84,7 @@ contract autoria {
             statusData = StatusData.Finished;
             emit Approved(arbiter, true, block.timestamp);
 
-            (bool send, ) = address(seller).call{value: carPrice}("");
+            (bool send,) = address(seller).call{value: carPrice}("");
 
             if (balanceSellerBefore >= address(seller).balance) {
                 revert TransferFailed(seller);
@@ -96,7 +99,7 @@ contract autoria {
             emit canceled(buyer, msg.sender, carPrice, block.timestamp);
 
             uint256 balanceBuyerBefore = address(buyer).balance;
-            (bool send, ) = address(buyer).call{value: carPrice}("");
+            (bool send,) = address(buyer).call{value: carPrice}("");
             // require(send, "tranfer to buyer failed"); // <-- было
             if (balanceBuyerBefore >= address(buyer).balance) {
                 revert TransferFailed(buyer);
@@ -128,7 +131,7 @@ contract autoria {
         statusData = StatusData.Cancelled;
         emit canceled(buyer, msg.sender, carPrice, block.timestamp);
         uint256 balanceBeforeBuyer2 = address(buyer).balance;
-        (bool send, ) = address(buyer).call{value: carPrice}("");
+        (bool send,) = address(buyer).call{value: carPrice}("");
 
         if (send == false) {
             revert RefundFailed(msg.sender);

@@ -59,7 +59,7 @@ contract AutoriaTest is Test {
 
         vm.startPrank(arbiter);
         autoContract.approved(false);
-        assertEq(uint(autoContract.statusData()), 3, "statusData invalid");
+        assertEq(uint256(autoContract.statusData()), 3, "statusData invalid");
         vm.stopPrank();
     }
 
@@ -83,6 +83,7 @@ contract AutoriaTest is Test {
         assert(balanceBefore + 20000 ether == address(buyer).balance);
         vm.stopPrank();
     }
+
     // abi.encodeWithSelector--важно
     function testCancel2() public {
         testPayforCar();
@@ -96,12 +97,14 @@ contract AutoriaTest is Test {
         // assert(balanceBefore + 20000 ether == address(buyer).balance);
         vm.stopPrank();
     }
+
     // тест апрува без депопизита
     function testApproved4() public {
         vm.expectRevert(abi.encodeWithSelector(autoria.InvalidStatus.selector, arbiter));
         vm.startPrank(arbiter);
         autoContract.approved(true);
     }
+
     // тест апрува два раза к ряду
     function testApproved5() public {
         testApproved();
@@ -110,6 +113,7 @@ contract AutoriaTest is Test {
         vm.expectRevert();
         autoContract.approved(true);
     }
+
     // второй тест оплаты, если покупатель уже существует (уязвимость)
     function testPayforCar2x() public {
         testPayforCar();
