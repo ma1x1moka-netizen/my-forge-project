@@ -23,10 +23,11 @@ contract autoria {
         Finished,
         Cancelled
     }
-    StatusData statusData;
+    StatusData public statusData;
 
     // string public status;
-    uint256 public deadLine = block.timestamp + 30 days;
+    // uint256 public deadLine = block.timestamp + 30 days; <-- было
+    uint256 public deadLine;
 
     constructor(address _arbiter, address _seller) {
         statusData = StatusData.Open;
@@ -45,6 +46,8 @@ contract autoria {
 
         buyer = msg.sender;
 
+        deadLine = block.timestamp + 30 days;
+
         statusData = StatusData.Locked;
     }
     // смотрим баланс
@@ -62,7 +65,7 @@ contract autoria {
             // <-- Стало
             revert ApproverNotValid(msg.sender);
         }
-        statusData = StatusData.Finished;
+        // statusData = StatusData.Finished;
 
         if (address(this).balance < carPrice) {
             revert BalanceTooLow();
@@ -70,6 +73,8 @@ contract autoria {
 
         if (_status == true) {
             uint256 balanceSellerBefore = address(seller).balance;
+
+            statusData = StatusData.Finished;
 
             (bool send, ) = address(seller).call{value: carPrice}("");
 
@@ -82,6 +87,8 @@ contract autoria {
                 revert TransferFailed(seller);
             }
         } else {
+            statusData = StatusData.Cancelled;
+
             uint256 balanceBuyerBefore = address(buyer).balance;
             (bool send, ) = address(buyer).call{value: carPrice}("");
             // require(send, "tranfer to buyer failed"); // <-- было

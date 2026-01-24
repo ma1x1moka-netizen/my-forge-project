@@ -54,6 +54,7 @@ contract AutoriaTest is Test {
 
         vm.startPrank(arbiter);
         autoContract.approved(false);
+        assertEq(uint(autoContract.statusData()), 3, "statusData invalid");
         vm.stopPrank();
     }
 
