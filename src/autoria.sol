@@ -24,6 +24,9 @@ contract autoria {
         Cancelled
     }
     StatusData public statusData;
+    event Deposit(address indexed _buyer, uint256 _amount, uint256 time);
+    event Approved(address indexed _arbiter, bool approved, uint256 time);
+    event canceled(address indexed _buyer, address actor, uint256 _amount, uint256 time);
 
     // string public status;
     // uint256 public deadLine = block.timestamp + 30 days; <-- было
@@ -49,6 +52,7 @@ contract autoria {
         deadLine = block.timestamp + 30 days;
 
         statusData = StatusData.Locked;
+        emit Deposit(msg.sender, msg.value, block.timestamp);
     }
     // смотрим баланс
     function getBalance() public view returns (uint256) {
@@ -75,6 +79,7 @@ contract autoria {
             uint256 balanceSellerBefore = address(seller).balance;
 
             statusData = StatusData.Finished;
+            emit Approved(arbiter, true, block.timestamp);
 
             (bool send, ) = address(seller).call{value: carPrice}("");
 
@@ -88,6 +93,7 @@ contract autoria {
             }
         } else {
             statusData = StatusData.Cancelled;
+            emit canceled(buyer, msg.sender, carPrice, block.timestamp);
 
             uint256 balanceBuyerBefore = address(buyer).balance;
             (bool send, ) = address(buyer).call{value: carPrice}("");
@@ -101,6 +107,7 @@ contract autoria {
             }
         }
     }
+
     // прошел месяц, ни денег ни тачки, что делать?
     function cancel() external {
         if (statusData != StatusData.Locked) {
@@ -119,6 +126,7 @@ contract autoria {
             revert BalanceTooLow();
         }
         statusData = StatusData.Cancelled;
+        emit canceled(buyer, msg.sender, carPrice, block.timestamp);
         uint256 balanceBeforeBuyer2 = address(buyer).balance;
         (bool send, ) = address(buyer).call{value: carPrice}("");
 
