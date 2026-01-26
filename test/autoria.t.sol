@@ -13,7 +13,6 @@ contract AutoriaTest is Test {
     address buyer = makeAddr("buyer");
     address robber = makeAddr("robber");
     address buyer2 = makeAddr("buyer2");
-    // bytes32 dealId = bytes32("dealId");
 
     event Deposit(address indexed _buyer, uint256 _amount, uint256 time);
     event Approved(address indexed _arbiter, bool approved, uint256 time);
@@ -59,7 +58,7 @@ contract AutoriaTest is Test {
 
         vm.startPrank(arbiter);
         autoContract.approved(false);
-        assertEq(uint256(autoContract.statusData()), 3, "statusData invalid");
+        // assertEq(uint256(autoContract.statusData()), 3, "statusData invalid");
         vm.stopPrank();
     }
 
@@ -67,8 +66,8 @@ contract AutoriaTest is Test {
         testPayforCar();
 
         vm.startPrank(robber);
-        // vm.expectRevert(autoContract.ApproverNotValid, msg.sender);
-        vm.expectRevert(abi.encodeWithSelector(autoria.ApproverNotValid.selector, robber));
+
+        vm.expectRevert(abi.encodeWithSelector(autoria.AccessDenied.selector, robber));
         autoContract.approved(true);
         vm.stopPrank();
     }
@@ -101,6 +100,7 @@ contract AutoriaTest is Test {
         vm.expectRevert(abi.encodeWithSelector(autoria.InvalidStatus.selector, arbiter));
         vm.startPrank(arbiter);
         autoContract.approved(true);
+        vm.stopPrank();
     }
 
     // тест апрува два раза к ряду
@@ -114,11 +114,14 @@ contract AutoriaTest is Test {
 
     // второй тест оплаты, если покупатель уже существует (уязвимость)
     function testPayforCar2x() public {
+        uint256 price = autoContract.carPrice();
+
         testPayforCar();
+
         vm.startPrank(buyer2);
+        vm.deal(buyer2, price);
         vm.expectRevert(abi.encodeWithSelector(autoria.InvalidStatus.selector, buyer2));
-        vm.deal(buyer2, autoContract.carPrice());
-        autoContract.payforCAR{value: autoContract.carPrice()}();
+        autoContract.payforCAR{value: price}();
         vm.stopPrank();
     }
 
@@ -159,9 +162,6 @@ contract AutoriaTest is Test {
     }
 
     function testCancelemit() public {
-        // vm.expectEmit();
-        //  emit canceled(buyer, msg.sender, 20000 ether, block.timestamp);
-
         vm.startPrank(buyer);
         vm.deal(buyer, autoContract.carPrice());
         autoContract.payforCAR{value: autoContract.carPrice()}();

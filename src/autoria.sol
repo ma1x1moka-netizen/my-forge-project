@@ -6,7 +6,7 @@ contract autoria {
     error BalanceTooLow();
     error DealFailed();
     error RefundFailed(address sender);
-    error ApproverNotValid(address sender);
+    // error ApproverNotValid(address sender);
     error NotEnoughDays(address sender);
     error NotEnouhMoney(address sender);
     error TransferFailed(address recipient);
@@ -28,8 +28,6 @@ contract autoria {
     event Approved(address indexed _arbiter, bool approved, uint256 time);
     event canceled(address indexed _buyer, address actor, uint256 _amount, uint256 time);
 
-    // string public status;
-    // uint256 public deadLine = block.timestamp + 30 days; <-- было
     uint256 public deadLine;
 
     constructor(address _arbiter, address _seller) {
@@ -43,24 +41,20 @@ contract autoria {
             revert InvalidStatus(msg.sender);
         }
 
-        if (msg.value < carPrice) {
+        if (msg.value != carPrice) {
             revert NotEnouhMoney(msg.sender);
         }
 
         _;
     }
 
-    modifier approvedCheck() {
-        if (statusData != StatusData.Locked) {
+    modifier inStatus(StatusData expectedStatus, address _user) {
+        if (statusData != expectedStatus) {
             revert InvalidStatus(msg.sender);
         }
 
-        if (msg.sender != arbiter) {
-            revert ApproverNotValid(msg.sender);
-        }
-
-        if (address(this).balance < carPrice) {
-            revert BalanceTooLow();
+        if (msg.sender != _user) {
+            revert AccessDenied(msg.sender);
         }
 
         _;
@@ -68,19 +62,11 @@ contract autoria {
 
     // Оплата за тачку
     function payforCAR() external payable checkPay {
-        if (statusData != StatusData.Open) {
-            revert InvalidStatus(msg.sender);
-        }
-
-        if (msg.value < carPrice) {
-            revert NotEnouhMoney(msg.sender);
-        }
-
         buyer = msg.sender;
 
         deadLine = block.timestamp + 30 days;
-
         statusData = StatusData.Locked;
+
         emit Deposit(msg.sender, msg.value, block.timestamp);
     }
 
@@ -91,15 +77,7 @@ contract autoria {
     }
 
     // арбитр принимает решение
-    function approved(bool _status) public {
-        if (statusData != StatusData.Locked) {
-            revert InvalidStatus(msg.sender);
-        }
-
-        if (msg.sender != arbiter) {
-            revert ApproverNotValid(msg.sender);
-        }
-
+    function approved(bool _status) public inStatus(StatusData.Locked, arbiter) {
         if (address(this).balance < carPrice) {
             revert BalanceTooLow();
         }
@@ -126,15 +104,7 @@ contract autoria {
     }
 
     // прошел месяц, ни денег ни тачки, что делать?
-    function cancel() external {
-        if (statusData != StatusData.Locked) {
-            revert InvalidStatus(msg.sender);
-        }
-
-        if (msg.sender != buyer) {
-            revert AccessDenied(msg.sender);
-        }
-
+    function cancel() external inStatus(StatusData.Locked, buyer) {
         if (block.timestamp <= deadLine) {
             revert NotEnoughDays(msg.sender);
         }
