@@ -38,8 +38,36 @@ contract autoria {
         arbiter = _arbiter;
     }
 
+    modifier checkPay() {
+        if (statusData != StatusData.Open) {
+            revert InvalidStatus(msg.sender);
+        }
+
+        if (msg.value < carPrice) {
+            revert NotEnouhMoney(msg.sender);
+        }
+
+        _;
+    }
+
+    modifier approvedCheck() {
+        if (statusData != StatusData.Locked) {
+            revert InvalidStatus(msg.sender);
+        }
+
+        if (msg.sender != arbiter) {
+            revert ApproverNotValid(msg.sender);
+        }
+
+        if (address(this).balance < carPrice) {
+            revert BalanceTooLow();
+        }
+
+        _;
+    }
+
     // Оплата за тачку
-    function payforCAR() external payable {
+    function payforCAR() external payable checkPay {
         if (statusData != StatusData.Open) {
             revert InvalidStatus(msg.sender);
         }
@@ -69,43 +97,29 @@ contract autoria {
         }
 
         if (msg.sender != arbiter) {
-            // <-- Стало
             revert ApproverNotValid(msg.sender);
         }
-        // statusData = StatusData.Finished;
 
         if (address(this).balance < carPrice) {
             revert BalanceTooLow();
         }
 
         if (_status == true) {
-            uint256 balanceSellerBefore = address(seller).balance;
-
             statusData = StatusData.Finished;
-            emit Approved(arbiter, true, block.timestamp);
+            emit Approved(msg.sender, true, block.timestamp);
 
-            (bool send,) = address(seller).call{value: carPrice}("");
+            (bool send, ) = address(seller).call{value: carPrice}("");
 
-            if (balanceSellerBefore >= address(seller).balance) {
-                revert TransferFailed(seller);
-            }
-            // require(send, "tranfer failed"); // <-- было
             if (send != true) {
-                // <-- стало
                 revert TransferFailed(seller);
             }
         } else {
             statusData = StatusData.Cancelled;
             emit canceled(buyer, msg.sender, carPrice, block.timestamp);
 
-            uint256 balanceBuyerBefore = address(buyer).balance;
-            (bool send,) = address(buyer).call{value: carPrice}("");
-            // require(send, "tranfer to buyer failed"); // <-- было
-            if (balanceBuyerBefore >= address(buyer).balance) {
-                revert TransferFailed(buyer);
-            }
+            (bool send, ) = address(buyer).call{value: carPrice}("");
+
             if (send != true) {
-                // <-- стало
                 revert TransferFailed(buyer);
             }
         }
@@ -130,14 +144,10 @@ contract autoria {
         }
         statusData = StatusData.Cancelled;
         emit canceled(buyer, msg.sender, carPrice, block.timestamp);
-        uint256 balanceBeforeBuyer2 = address(buyer).balance;
-        (bool send,) = address(buyer).call{value: carPrice}("");
+
+        (bool send, ) = address(buyer).call{value: carPrice}("");
 
         if (send == false) {
-            revert RefundFailed(msg.sender);
-        }
-
-        if (balanceBeforeBuyer2 >= address(buyer).balance) {
             revert RefundFailed(buyer);
         }
     }

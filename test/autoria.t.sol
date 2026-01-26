@@ -31,8 +31,8 @@ contract AutoriaTest is Test {
 
     function testPayforCar() public {
         vm.startPrank(buyer);
-        vm.deal(buyer, 20000 ether);
-        autoContract.payforCAR{value: 20000 ether}();
+        vm.deal(buyer, autoContract.carPrice());
+        autoContract.payforCAR{value: autoContract.carPrice()}();
         vm.stopPrank();
     }
 
@@ -80,7 +80,7 @@ contract AutoriaTest is Test {
         uint256 balanceBefore = address(buyer).balance;
         autoContract.cancel();
         assert(address(autoContract).balance == 0);
-        assert(balanceBefore + 20000 ether == address(buyer).balance);
+        assert(balanceBefore + autoContract.carPrice() == address(buyer).balance);
         vm.stopPrank();
     }
 
@@ -91,10 +91,8 @@ contract AutoriaTest is Test {
         vm.startPrank(buyer);
         vm.warp(block.timestamp + 17 days);
         vm.expectRevert(abi.encodeWithSelector(autoria.NotEnoughDays.selector, buyer));
-        uint256 balanceBefore = address(buyer).balance;
         autoContract.cancel();
-        // assert(address(autoContract).balance == 0);
-        // assert(balanceBefore + 20000 ether == address(buyer).balance);
+
         vm.stopPrank();
     }
 
@@ -119,23 +117,23 @@ contract AutoriaTest is Test {
         testPayforCar();
         vm.startPrank(buyer2);
         vm.expectRevert(abi.encodeWithSelector(autoria.InvalidStatus.selector, buyer2));
-        vm.deal(buyer2, 20000 ether);
-        autoContract.payforCAR{value: 20000 ether}();
+        vm.deal(buyer2, autoContract.carPrice());
+        autoContract.payforCAR{value: autoContract.carPrice()}();
         vm.stopPrank();
     }
 
     function testPayforCarEmit() public {
         vm.expectEmit();
 
-        emit Deposit(buyer, 20000 ether, block.timestamp);
+        emit Deposit(buyer, autoContract.carPrice(), block.timestamp);
 
         testPayforCar();
     }
 
     function testApprovedEmit() public {
         vm.startPrank(buyer);
-        vm.deal(buyer, 20000 ether);
-        autoContract.payforCAR{value: 20000 ether}();
+        vm.deal(buyer, autoContract.carPrice());
+        autoContract.payforCAR{value: autoContract.carPrice()}();
         vm.stopPrank();
         vm.startPrank(arbiter);
         vm.expectEmit();
@@ -148,13 +146,13 @@ contract AutoriaTest is Test {
 
     function testApprovedEmit2() public {
         vm.startPrank(buyer);
-        vm.deal(buyer, 20000 ether);
-        autoContract.payforCAR{value: 20000 ether}();
+        vm.deal(buyer, autoContract.carPrice());
+        autoContract.payforCAR{value: autoContract.carPrice()}();
         vm.stopPrank();
         vm.startPrank(arbiter);
         vm.expectEmit();
 
-        emit canceled(buyer, arbiter, 20000 ether, block.timestamp);
+        emit canceled(buyer, arbiter, autoContract.carPrice(), block.timestamp);
 
         autoContract.approved(false);
         vm.stopPrank();
@@ -165,18 +163,18 @@ contract AutoriaTest is Test {
         //  emit canceled(buyer, msg.sender, 20000 ether, block.timestamp);
 
         vm.startPrank(buyer);
-        vm.deal(buyer, 20000 ether);
-        autoContract.payforCAR{value: 20000 ether}();
+        vm.deal(buyer, autoContract.carPrice());
+        autoContract.payforCAR{value: autoContract.carPrice()}();
         vm.stopPrank();
         vm.startPrank(buyer);
         vm.warp(block.timestamp + 31 days);
         uint256 balanceBefore = address(buyer).balance;
         vm.expectEmit();
-        emit canceled(buyer, buyer, 20000 ether, block.timestamp);
+        emit canceled(buyer, buyer, autoContract.carPrice(), block.timestamp);
 
         autoContract.cancel();
         assert(address(autoContract).balance == 0);
-        assert(balanceBefore + 20000 ether == address(buyer).balance);
+        assert(balanceBefore + autoContract.carPrice() == address(buyer).balance);
         vm.stopPrank();
     }
 }
