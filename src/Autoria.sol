@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.27;
+import "./interfaces/IAutoriaEvents.sol";
 
-contract Autoria {
+contract Autoria is IAutoriaEvents {
     error BalanceTooLow();
     error DealFailed();
     error RefundFailed(address sender);
@@ -24,9 +25,6 @@ contract Autoria {
         Cancelled
     }
     StatusData public statusData;
-    event Deposit(address indexed _buyer, uint256 _amount, uint256 time);
-    event Approved(address indexed _arbiter, bool approved, uint256 time);
-    event Canceled(address indexed _buyer, address actor, uint256 _amount, uint256 time);
 
     uint256 public deadLine;
 
@@ -86,7 +84,7 @@ contract Autoria {
             statusData = StatusData.Finished;
             emit Approved(msg.sender, true, block.timestamp);
 
-            (bool send,) = address(seller).call{value: carPrice}("");
+            (bool send, ) = address(seller).call{value: carPrice}("");
 
             if (send != true) {
                 revert TransferFailed(seller);
@@ -95,7 +93,7 @@ contract Autoria {
             statusData = StatusData.Cancelled;
             emit Canceled(buyer, msg.sender, carPrice, block.timestamp);
 
-            (bool send,) = address(buyer).call{value: carPrice}("");
+            (bool send, ) = address(buyer).call{value: carPrice}("");
 
             if (send != true) {
                 revert TransferFailed(buyer);
@@ -115,7 +113,7 @@ contract Autoria {
         statusData = StatusData.Cancelled;
         emit Canceled(buyer, msg.sender, carPrice, block.timestamp);
 
-        (bool send,) = address(buyer).call{value: carPrice}("");
+        (bool send, ) = address(buyer).call{value: carPrice}("");
 
         if (send == false) {
             revert RefundFailed(buyer);

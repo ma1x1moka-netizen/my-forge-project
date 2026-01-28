@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
-import "../src/Autoria.sol"; // 2. вот это мой контракт тут
+import "../src/Autoria.sol";
 import "../src/interfaces/IAutoriaEvents.sol";
 
 contract AutoriaTest is Test, IAutoriaEvents {
