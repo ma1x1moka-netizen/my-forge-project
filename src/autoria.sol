@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.27;
 
-contract autoria {
+contract Autoria {
     error BalanceTooLow();
     error DealFailed();
     error RefundFailed(address sender);
@@ -26,7 +26,7 @@ contract autoria {
     StatusData public statusData;
     event Deposit(address indexed _buyer, uint256 _amount, uint256 time);
     event Approved(address indexed _arbiter, bool approved, uint256 time);
-    event canceled(address indexed _buyer, address actor, uint256 _amount, uint256 time);
+    event Canceled(address indexed _buyer, address actor, uint256 _amount, uint256 time);
 
     uint256 public deadLine;
 
@@ -93,7 +93,7 @@ contract autoria {
             }
         } else {
             statusData = StatusData.Cancelled;
-            emit canceled(buyer, msg.sender, carPrice, block.timestamp);
+            emit Canceled(buyer, msg.sender, carPrice, block.timestamp);
 
             (bool send,) = address(buyer).call{value: carPrice}("");
 
@@ -113,7 +113,7 @@ contract autoria {
             revert BalanceTooLow();
         }
         statusData = StatusData.Cancelled;
-        emit canceled(buyer, msg.sender, carPrice, block.timestamp);
+        emit Canceled(buyer, msg.sender, carPrice, block.timestamp);
 
         (bool send,) = address(buyer).call{value: carPrice}("");
 
