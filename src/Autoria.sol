@@ -14,6 +14,8 @@ contract Autoria is IAutoriaEvents {
     error AccessDenied(address sender);
     error InvalidStatus(address sender);
     uint256 public carPrice = 20000 ether;
+    uint256 public arbiterComission = 200 ether;
+    // uint256 public totalAmount = arbiterComission + carPrice;
     address public seller;
     address public buyer;
     address public arbiter;
@@ -22,8 +24,11 @@ contract Autoria is IAutoriaEvents {
         Open,
         Locked,
         Finished,
-        Cancelled
+        Cancelled,
+        ArbiterPaid,
+        MoneyRefunded
     }
+
     StatusData public statusData;
 
     uint256 public deadLine;
@@ -35,11 +40,13 @@ contract Autoria is IAutoriaEvents {
     }
 
     modifier checkPay() {
+        // uint256 totalAmount = arbiterComission + carPrice;
+
         if (statusData != StatusData.Open) {
             revert InvalidStatus(msg.sender);
         }
 
-        if (msg.value != carPrice) {
+        if (msg.value != getTotalAmount()) {
             revert NotEnouhMoney(msg.sender);
         }
 
@@ -58,8 +65,15 @@ contract Autoria is IAutoriaEvents {
         _;
     }
 
+    // Считаем обшую цена+комиссия
+    function getTotalAmount() public view returns (uint256 totalAmount) {
+        totalAmount = arbiterComission + carPrice;
+        return totalAmount;
+    }
+
     // Оплата за тачку
     function payforCAR() external payable checkPay {
+        // uint256 totalAmount = arbiterComission + carPrice;
         buyer = msg.sender;
 
         deadLine = block.timestamp + 30 days;
@@ -101,19 +115,40 @@ contract Autoria is IAutoriaEvents {
         }
     }
 
+    function payArbiter() public {
+        if (statusData != StatusData.Cancelled && statusData != StatusData.Finished) {
+            revert InvalidStatus(msg.sender);
+        }
+
+        if (msg.sender != arbiter) {
+            revert AccessDenied(msg.sender);
+        }
+        if (address(this).balance < arbiterComission) {
+            revert TransferFailed(arbiter);
+        }
+
+        emit PayArbiterDone(arbiter, arbiterComission, block.timestamp);
+        statusData = StatusData.ArbiterPaid;
+        (bool send,) = address(arbiter).call{value: arbiterComission}("");
+
+        if (send != true) {
+            revert TransferFailed(arbiter);
+        }
+    }
+
     // прошел месяц, ни денег ни тачки, что делать?
     function cancel() external inStatus(StatusData.Locked, buyer) {
         if (block.timestamp <= deadLine) {
             revert NotEnoughDays(msg.sender);
         }
 
-        if (address(this).balance < carPrice) {
+        if (address(this).balance < getTotalAmount()) {
             revert BalanceTooLow();
         }
-        statusData = StatusData.Cancelled;
-        emit Canceled(buyer, msg.sender, carPrice, block.timestamp);
+        statusData = StatusData.MoneyRefunded;
+        emit Canceled(buyer, msg.sender, getTotalAmount(), block.timestamp);
 
-        (bool send,) = address(buyer).call{value: carPrice}("");
+        (bool send,) = address(buyer).call{value: getTotalAmount()}("");
 
         if (send == false) {
             revert RefundFailed(buyer);
