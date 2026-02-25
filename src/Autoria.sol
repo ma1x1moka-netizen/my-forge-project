@@ -177,17 +177,17 @@ contract Autoria is IAutoriaEvents {
             DealsId[id].statusData = StatusData.Completed;
             emit Approved(DealsId[id].arbiter, id, block.timestamp);
 
-            (bool sendToArbiter, ) = payable(DealsId[id].arbiter).call{value: DealsId[id].arbiterPart}("");
+            (bool sendToArbiter,) = payable(DealsId[id].arbiter).call{value: DealsId[id].arbiterPart}("");
             if (sendToArbiter != true) {
                 revert TransferFailed(DealsId[id].arbiter, id, DealsId[id].arbiterPart);
             }
 
-            (bool sendToSeller, ) = payable(DealsId[id].seller).call{value: DealsId[id].sellerPart}("");
+            (bool sendToSeller,) = payable(DealsId[id].seller).call{value: DealsId[id].sellerPart}("");
             if (sendToSeller != true) {
                 revert TransferFailed(DealsId[id].seller, id, DealsId[id].sellerPart);
             }
 
-            (bool sendPledgeToSeller, ) = payable(DealsId[id].seller).call{value: DealsId[id].SellersPledge}("");
+            (bool sendPledgeToSeller,) = payable(DealsId[id].seller).call{value: DealsId[id].SellersPledge}("");
             if (sendPledgeToSeller != true) {
                 revert TransferFailed(DealsId[id].seller, id, DealsId[id].SellersPledge);
             }
@@ -196,12 +196,12 @@ contract Autoria is IAutoriaEvents {
             DealsId[id].statusData = StatusData.Refunded;
             emit Canceled(DealsId[id].buyer, msg.sender, id, DealsId[id].carPrice, block.timestamp);
 
-            (bool sendToBuyer, ) = payable(DealsId[id].buyer).call{value: DealsId[id].carPrice}("");
+            (bool sendToBuyer,) = payable(DealsId[id].buyer).call{value: DealsId[id].carPrice}("");
             if (sendToBuyer != true) {
                 revert TransferFailed(DealsId[id].buyer, id, DealsId[id].carPrice);
             }
 
-            (bool sendToArbiter, ) = payable(DealsId[id].arbiter).call{value: DealsId[id].SellersPledge}("");
+            (bool sendToArbiter,) = payable(DealsId[id].arbiter).call{value: DealsId[id].SellersPledge}("");
             if (sendToArbiter != true) {
                 revert TransferFailed(DealsId[id].arbiter, id, DealsId[id].SellersPledge);
             }
@@ -230,12 +230,12 @@ contract Autoria is IAutoriaEvents {
         DealsId[id].statusData = StatusData.Expired;
         emit TimeCancel(DealsId[id].buyer, id, block.timestamp);
 
-        (bool refund, ) = payable(DealsId[id].buyer).call{value: DealsId[id].carPrice}("");
+        (bool refund,) = payable(DealsId[id].buyer).call{value: DealsId[id].carPrice}("");
         if (refund != true) {
             revert RefundFailed(DealsId[id].buyer);
         }
 
-        (bool sendPledgeToSeller, ) = payable(DealsId[id].seller).call{value: DealsId[id].SellersPledge}("");
+        (bool sendPledgeToSeller,) = payable(DealsId[id].seller).call{value: DealsId[id].SellersPledge}("");
         if (sendPledgeToSeller != true) {
             revert TransferFailed(DealsId[id].seller, id, DealsId[id].SellersPledge);
         }
