@@ -2,8 +2,9 @@
 
 pragma solidity ^0.8.27;
 import "./interfaces/IAutoriaEvents.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract Autoria is IAutoriaEvents {
+contract Autoria is IAutoriaEvents, ReentrancyGuard {
     // Масивчик прикольный
 
     struct DealData {
@@ -24,8 +25,6 @@ contract Autoria is IAutoriaEvents {
     // custom errors
 
     error Failed();
-    error BalanceTooLow();
-    error DealFailed();
     error RefundFailed(address sender);
     error NotEnoughDays(address sender, uint256 time);
     error NotEnoughMoney(address sender);
@@ -35,6 +34,9 @@ contract Autoria is IAutoriaEvents {
     error InvalidDealId(uint256 id);
     error PayPledge(address sender, uint256 amount);
     error CommissionCantBeBiggerThanPrice(uint256 price, uint256 commission);
+
+    // constants
+    uint256 public constant RESOLUTION_DEADLINE = 30 days;
 
     // variables
     uint256 public dealCounter;
@@ -147,7 +149,7 @@ contract Autoria is IAutoriaEvents {
         }
         dealsId[id].statusData = StatusData.Funded;
         dealsId[id].buyer = msg.sender;
-        dealsId[id].deadline = block.timestamp + 30 days;
+        dealsId[id].deadline = block.timestamp + RESOLUTION_DEADLINE;
         dealsId[id].amount = msg.value;
 
         emit Deposit(msg.sender, msg.value, block.timestamp);
@@ -161,7 +163,7 @@ contract Autoria is IAutoriaEvents {
     // ( bool send,) = payable(dealsId[id].seller).call{value: dealsId[id].sellerPart}("");
 
     // арбитр принимает решение
-    function approveDeal(uint256 id, bool decision) public {
+    function approveDeal(uint256 id, bool decision) public nonReentrant {
         if (dealsId[id].seller == address(0)) {
             revert InvalidDealId(id);
         }
@@ -210,7 +212,7 @@ contract Autoria is IAutoriaEvents {
     }
 
     // прошел месяц, ни денег ни тачки, что делать?`
-    function cancel(uint256 id) external {
+    function cancel(uint256 id) external nonReentrant {
         if (dealsId[id].seller == address(0)) {
             revert InvalidDealId(id);
         }
