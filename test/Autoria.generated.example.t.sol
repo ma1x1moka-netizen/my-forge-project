@@ -52,7 +52,6 @@ contract RevertOnSecondReceive {
     }
 }
 
-
 contract AutoriaGeneratedExampleTest is Test, IAutoriaEvents {
     Autoria public autoria;
 
@@ -105,11 +104,7 @@ contract AutoriaGeneratedExampleTest is Test, IAutoriaEvents {
 
     function test_createAnnouncement_revert_commissionGtePrice() public {
         vm.prank(seller);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Autoria.CommissionCantBeBiggerThanPrice.selector, CAR_PRICE, CAR_PRICE
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Autoria.CommissionCantBeBiggerThanPrice.selector, CAR_PRICE, CAR_PRICE));
         autoria.createAnnouncement{value: CAR_PRICE}(CAR_PRICE, CAR_PRICE);
     }
 
@@ -308,9 +303,7 @@ contract AutoriaGeneratedExampleTest is Test, IAutoriaEvents {
         _payForCar(1);
 
         vm.prank(address(reverter)); // arbiter for this deal is the reverting contract
-        vm.expectRevert(
-            abi.encodeWithSelector(Autoria.TransferFailed.selector, address(reverter), 1, COMMISSION)
-        );
+        vm.expectRevert(abi.encodeWithSelector(Autoria.TransferFailed.selector, address(reverter), 1, COMMISSION));
         autoria.approveDeal(1, true);
     }
 
@@ -322,9 +315,7 @@ contract AutoriaGeneratedExampleTest is Test, IAutoriaEvents {
 
         vm.prank(arbiter);
         vm.expectRevert(
-            abi.encodeWithSelector(
-                Autoria.TransferFailed.selector, address(reverter), 1, CAR_PRICE - COMMISSION
-            )
+            abi.encodeWithSelector(Autoria.TransferFailed.selector, address(reverter), 1, CAR_PRICE - COMMISSION)
         );
         autoria.approveDeal(1, true);
     }
@@ -336,11 +327,7 @@ contract AutoriaGeneratedExampleTest is Test, IAutoriaEvents {
         _payForCar(1);
 
         vm.prank(arbiter);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Autoria.TransferFailed.selector, address(reverterSecond), 1, COMMISSION
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Autoria.TransferFailed.selector, address(reverterSecond), 1, COMMISSION));
         autoria.approveDeal(1, true);
     }
 
@@ -379,9 +366,7 @@ contract AutoriaGeneratedExampleTest is Test, IAutoriaEvents {
         reverter.payForCar{value: CAR_PRICE}(autoria, 1);
 
         vm.prank(arbiter);
-        vm.expectRevert(
-            abi.encodeWithSelector(Autoria.TransferFailed.selector, address(reverter), 1, CAR_PRICE)
-        );
+        vm.expectRevert(abi.encodeWithSelector(Autoria.TransferFailed.selector, address(reverter), 1, CAR_PRICE));
         autoria.approveDeal(1, false);
     }
 
@@ -392,11 +377,7 @@ contract AutoriaGeneratedExampleTest is Test, IAutoriaEvents {
         _payForCar(1);
 
         vm.prank(address(reverter));
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Autoria.TransferFailed.selector, address(reverter), 1, COMMISSION
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Autoria.TransferFailed.selector, address(reverter), 1, COMMISSION));
         autoria.approveDeal(1, false);
     }
 
@@ -474,11 +455,7 @@ contract AutoriaGeneratedExampleTest is Test, IAutoriaEvents {
         vm.warp(block.timestamp + autoria.RESOLUTION_DEADLINE() + 1);
 
         vm.prank(buyer);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Autoria.TransferFailed.selector, address(reverter), 1, COMMISSION
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(Autoria.TransferFailed.selector, address(reverter), 1, COMMISSION));
         autoria.cancel(1);
     }
 
